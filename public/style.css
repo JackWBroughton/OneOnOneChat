@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LinkLine Chat</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand-block">
+          <div class="brand-icon">💬</div>
+          <div>
+            <p class="eyebrow">Anonymous</p>
+            <h1>LinkLine</h1>
+          </div>
+        </div>
+
+        <div class="panel">
+          <label for="nameInput">Your alias</label>
+          <input id="nameInput" type="text" maxlength="20" placeholder="Guest-1234" />
+        </div>
+
+        <div class="panel actions">
+          <button id="createChatBtn" class="primary">Create new chat</button>
+          <div class="join-row">
+            <input id="codeInput" type="text" maxlength="6" inputmode="numeric" placeholder="Enter code" />
+            <button id="joinChatBtn">Join</button>
+          </div>
+        </div>
+
+        <div class="panel code-panel">
+          <p class="label">Chat code</p>
+          <div id="chatCode" class="code-box">--</div>
+          <button id="shareLinkBtn" class="secondary">Share link</button>
+        </div>
+      </aside>
+
+      <main class="chat-panel">
+        <header class="chat-header">
+          <div>
+            <p class="eyebrow">Direct chat</p>
+            <h2 id="roomTitle">Ready to connect</h2>
+          </div>
+          <div id="participantBadge" class="badge">0 online</div>
+        </header>
+
+        <div id="messages" class="messages" aria-live="polite"></div>
+
+        <div id="typingIndicator" class="typing-indicator hidden">Someone is typing…</div>
+
+        <div class="composer">
+          <label class="image-picker">
+            <input id="imageInput" type="file" accept="image/*" />
+            <span>📷</span>
+          </label>
+          <textarea id="messageInput" rows="1" placeholder="Type a message…"></textarea>
+          <button id="sendBtn" class="primary">Send</button>
+        </div>
+      </main>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/app.js"></script>
+  </body>
+</html>

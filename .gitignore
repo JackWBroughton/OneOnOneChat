@@ -1,0 +1,36 @@
+# LinkLine Chat
+
+LinkLine is a lightweight anonymous one-on-one chat app made with Node.js, Express, and Socket.IO.
+
+Features:
+- One-on-one anonymous chat without sign-in
+- Emoji support, numbers, normal text, and image sharing
+- A chat code that works like a phone-number-style connection ID
+- Share link button for easy joining
+- Live room updates and typing indicators
+
+## Run locally
+
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
+2. Start the server:
+   ```bash
+   npm start
+   ```
+3. Open:
+   ```bash
+   http://localhost:3000
+   ```
+
+## How it works
+
+- Click "Create new chat" to generate a new private room.
+- You will get a 6-digit room code and a share link.
+- Send the code or the share link to the person you want to message.
+- Anyone who enters the same code joins the same private chat room.
+
+## Notes
+
+This is a demo app built for local development. The room data lives in memory, so chats reset when the server restarts.
