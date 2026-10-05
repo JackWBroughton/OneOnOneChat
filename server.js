@@ -10,6 +10,7 @@ const io = new Server(server);
 const PORT = process.env.PORT || 3000;
 const rooms = new Map();
 const socketNames = new Map();
+const messageReadStatus = new Map();
 
 function defaultName(socketId) {
   return `Guest-${socketId.slice(0, 4).toUpperCase()}`;
@@ -145,7 +146,9 @@ io.on("connection", (socket) => {
       sender,
       text: hasText ? escapeText(text).slice(0, 4000) : "",
       image: hasImage ? image : "",
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      isRead: false,
+      readBy: []
     };
 
     room.messages.push(message);
@@ -153,7 +156,31 @@ io.on("connection", (socket) => {
       room.messages = room.messages.slice(-300);
     }
 
+    messageReadStatus.set(message.id, { read: false, readBy: [] });
     io.to(code).emit("chat:message", message);
+  });
+
+  socket.on("chat:mark-read", ({ code, messageIds }) => {
+    const room = rooms.get(String(code));
+    if (!room) return;
+
+    const reader = socketNames.get(socket.id) || defaultName(socket.id);
+
+    messageIds.forEach((messageId) => {
+      const message = room.messages.find((msg) => msg.id === messageId);
+      if (message && message.sender !== reader) {
+        message.isRead = true;
+        if (!message.readBy) message.readBy = [];
+        if (!message.readBy.includes(reader)) {
+          message.readBy.push(reader);
+        }
+
+        io.to(code).emit("chat:message-read", {
+          messageId: message.id,
+          readBy: reader
+        });
+      }
+    });
   });
 
   socket.on("chat:typing", ({ code, isTyping }) => {

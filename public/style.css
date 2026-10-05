@@ -1,67 +1,350 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>LinkLine Chat</title>
-    <link rel="stylesheet" href="/style.css" />
-  </head>
-  <body>
-    <div class="app-shell">
-      <aside class="sidebar">
-        <div class="brand-block">
-          <div class="brand-icon">💬</div>
-          <div>
-            <p class="eyebrow">Anonymous</p>
-            <h1>LinkLine</h1>
-          </div>
-        </div>
+* {
+  box-sizing: border-box;
+}
 
-        <div class="panel">
-          <label for="nameInput">Your alias</label>
-          <input id="nameInput" type="text" maxlength="20" placeholder="Guest-1234" />
-        </div>
+:root {
+  --bg: #0b1020;
+  --bg-2: #121a2e;
+  --panel: rgba(18, 27, 46, 0.95);
+  --panel-soft: rgba(25, 38, 60, 0.8);
+  --primary: #7c9cff;
+  --primary-2: #94f0d4;
+  --text: #edf3ff;
+  --muted: #9aa9c7;
+  --border: rgba(255, 255, 255, 0.08);
+  --success: #58d68d;
+  --danger: #ff7f7f;
+  --shadow: 0 24px 48px rgba(4, 9, 18, 0.5);
+}
 
-        <div class="panel actions">
-          <button id="createChatBtn" class="primary">Create new chat</button>
-          <div class="join-row">
-            <input id="codeInput" type="text" maxlength="6" inputmode="numeric" placeholder="Enter code" />
-            <button id="joinChatBtn">Join</button>
-          </div>
-        </div>
+html, body {
+  margin: 0;
+  min-height: 100%;
+  font-family: Inter, "Segoe UI", sans-serif;
+  background: linear-gradient(135deg, #0b1020, #161d32 55%, #0d1427);
+  color: var(--text);
+}
 
-        <div class="panel code-panel">
-          <p class="label">Chat code</p>
-          <div id="chatCode" class="code-box">--</div>
-          <button id="shareLinkBtn" class="secondary">Share link</button>
-        </div>
-      </aside>
+body {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
 
-      <main class="chat-panel">
-        <header class="chat-header">
-          <div>
-            <p class="eyebrow">Direct chat</p>
-            <h2 id="roomTitle">Ready to connect</h2>
-          </div>
-          <div id="participantBadge" class="badge">0 online</div>
-        </header>
+button, input, textarea {
+  font: inherit;
+}
 
-        <div id="messages" class="messages" aria-live="polite"></div>
+.app-shell {
+  width: min(1200px, 100%);
+  min-height: 760px;
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  background: rgba(8, 12, 22, 0.8);
+  border: 1px solid var(--border);
+  border-radius: 28px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(14px);
+}
 
-        <div id="typingIndicator" class="typing-indicator hidden">Someone is typing…</div>
+.sidebar {
+  background: rgba(13, 19, 31, 0.9);
+  border-right: 1px solid var(--border);
+  padding: 28px 22px;
+}
 
-        <div class="composer">
-          <label class="image-picker">
-            <input id="imageInput" type="file" accept="image/*" />
-            <span>📷</span>
-          </label>
-          <textarea id="messageInput" rows="1" placeholder="Type a message…"></textarea>
-          <button id="sendBtn" class="primary">Send</button>
-        </div>
-      </main>
-    </div>
+.brand-block {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 24px;
+}
 
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="/app.js"></script>
-  </body>
-</html>
+.brand-icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-2));
+  color: #07111b;
+  font-size: 1.7rem;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+h1, h2, p {
+  margin: 0;
+}
+
+h1 {
+  font-size: 1.9rem;
+}
+
+.panel {
+  background: var(--panel-soft);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 16px;
+  margin-bottom: 18px;
+}
+
+label {
+  display: block;
+  color: var(--muted);
+  font-size: 0.8rem;
+  margin-bottom: 10px;
+}
+
+input, textarea {
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  color: var(--text);
+  padding: 12px 14px;
+  outline: none;
+}
+
+input:focus, textarea:focus {
+  border-color: rgba(124, 156, 255, 0.7);
+  box-shadow: 0 0 0 3px rgba(124, 156, 255, 0.15);
+}
+
+.actions {
+  display: grid;
+  gap: 12px;
+}
+
+.join-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+
+button {
+  border: none;
+  border-radius: 12px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  cursor: pointer;
+  font-weight: 600;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+.primary {
+  background: linear-gradient(135deg, var(--primary), #7ee7d7);
+  color: #07111b;
+}
+
+.secondary {
+  width: 100%;
+  background: rgba(140, 148, 255, 0.15);
+}
+
+.code-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.label {
+  color: var(--muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.code-box {
+  border-radius: 12px;
+  background: rgba(124, 156, 255, 0.12);
+  border: 1px dashed rgba(124, 156, 255, 0.5);
+  text-align: center;
+  font-size: clamp(1.5rem, 5vw, 2.2rem);
+  font-weight: 700;
+  color: var(--primary-2);
+  padding: 16px 12px;
+  letter-spacing: 0.18em;
+}
+
+.chat-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.chat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 22px 28px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.badge {
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 0.76rem;
+  background: rgba(88, 214, 141, 0.12);
+  color: var(--success);
+  border: 1px solid rgba(88, 214, 141, 0.2);
+}
+
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: linear-gradient(180deg, rgba(10, 14, 20, 0.2), rgba(15, 21, 32, 0.5));
+}
+
+.message {
+  max-width: min(72%, 560px);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.message.self {
+  align-self: flex-end;
+  background: linear-gradient(135deg, rgba(124, 156, 255, 0.25), rgba(116, 199, 184, 0.15));
+}
+
+.message.system {
+  align-self: center;
+  max-width: 80%;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--muted);
+  text-align: center;
+  font-size: 0.82rem;
+}
+
+.message-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.message-text {
+  line-height: 1.5;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+.message img {
+  display: block;
+  max-width: min(320px, 100%);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.read-status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.65rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.read-status.read {
+  color: var(--success);
+}
+
+.typing-indicator {
+  min-height: 24px;
+  padding: 0 28px 8px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.hidden {
+  visibility: hidden;
+}
+
+.composer {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: end;
+  gap: 12px;
+  padding: 18px 28px 28px;
+  border-top: 1px solid var(--border);
+  background: rgba(10, 15, 26, 0.6);
+}
+
+.image-picker {
+  margin: 0;
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 1.4rem;
+}
+
+.image-picker input {
+  display: none;
+}
+
+textarea {
+  resize: none;
+  min-height: 52px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+#sendBtn {
+  min-width: 92px;
+  height: 52px;
+}
+
+@media (max-width: 900px) {
+  body {
+    padding: 16px;
+  }
+
+  .app-shell {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+
+  .sidebar {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .message {
+    max-width: 85%;
+  }
+}

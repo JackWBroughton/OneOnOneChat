@@ -1,335 +1,280 @@
-* {
-  box-sizing: border-box;
+const socket = io();
+
+const state = {
+  currentCode: "",
+  userName: "",
+  isTyping: false,
+  typingTimeout: null,
+  awaitingCode: false,
+  messageReadStatus: new Map()
+};
+
+const nameInput = document.getElementById("nameInput");
+const codeInput = document.getElementById("codeInput");
+const createChatBtn = document.getElementById("createChatBtn");
+const joinChatBtn = document.getElementById("joinChatBtn");
+const shareLinkBtn = document.getElementById("shareLinkBtn");
+const messageInput = document.getElementById("messageInput");
+const imageInput = document.getElementById("imageInput");
+const sendBtn = document.getElementById("sendBtn");
+const messagesEl = document.getElementById("messages");
+const chatCodeEl = document.getElementById("chatCode");
+const roomTitle = document.getElementById("roomTitle");
+const participantBadge = document.getElementById("participantBadge");
+const typingIndicator = document.getElementById("typingIndicator");
+
+function getName() {
+  const value = nameInput.value.trim();
+  if (value) return value.slice(0, 20);
+  return `Guest-${Math.floor(1000 + Math.random() * 9000)}`;
 }
 
-:root {
-  --bg: #0b1020;
-  --bg-2: #121a2e;
-  --panel: rgba(18, 27, 46, 0.95);
-  --panel-soft: rgba(25, 38, 60, 0.8);
-  --primary: #7c9cff;
-  --primary-2: #94f0d4;
-  --text: #edf3ff;
-  --muted: #9aa9c7;
-  --border: rgba(255, 255, 255, 0.08);
-  --success: #58d68d;
-  --danger: #ff7f7f;
-  --shadow: 0 24px 48px rgba(4, 9, 18, 0.5);
+function setRoomCode(code) {
+  state.currentCode = code;
+  chatCodeEl.textContent = code;
+  roomTitle.textContent = `Room ${code}`;
+
+  const shareUrl = `${window.location.origin}${window.location.pathname}?code=${code}`;
+  shareLinkBtn.dataset.url = shareUrl;
+  shareLinkBtn.title = shareUrl;
+  codeInput.value = code;
+
+  const url = new URL(window.location.href);
+  url.searchParams.set("code", code);
+  window.history.replaceState({}, "", url);
 }
 
-html, body {
-  margin: 0;
-  min-height: 100%;
-  font-family: Inter, "Segoe UI", sans-serif;
-  background: linear-gradient(135deg, #0b1020, #161d32 55%, #0d1427);
-  color: var(--text);
-}
+function appendMessage(message) {
+  const item = document.createElement("div");
+  item.className = `message ${message.type === "system" ? "system" : ""}`;
+  item.id = `msg-${message.id}`;
 
-body {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-}
-
-button, input, textarea {
-  font: inherit;
-}
-
-.app-shell {
-  width: min(1200px, 100%);
-  min-height: 760px;
-  display: grid;
-  grid-template-columns: 340px 1fr;
-  background: rgba(8, 12, 22, 0.8);
-  border: 1px solid var(--border);
-  border-radius: 28px;
-  overflow: hidden;
-  box-shadow: var(--shadow);
-  backdrop-filter: blur(14px);
-}
-
-.sidebar {
-  background: rgba(13, 19, 31, 0.9);
-  border-right: 1px solid var(--border);
-  padding: 28px 22px;
-}
-
-.brand-block {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 24px;
-}
-
-.brand-icon {
-  display: grid;
-  place-items: center;
-  width: 52px;
-  height: 52px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, var(--primary), var(--primary-2));
-  color: #07111b;
-  font-size: 1.7rem;
-}
-
-.eyebrow {
-  margin: 0 0 6px;
-  color: var(--muted);
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-}
-
-h1, h2, p {
-  margin: 0;
-}
-
-h1 {
-  font-size: 1.9rem;
-}
-
-.panel {
-  background: var(--panel-soft);
-  border: 1px solid var(--border);
-  border-radius: 18px;
-  padding: 16px;
-  margin-bottom: 18px;
-}
-
-label {
-  display: block;
-  color: var(--muted);
-  font-size: 0.8rem;
-  margin-bottom: 10px;
-}
-
-input, textarea {
-  width: 100%;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 12px;
-  color: var(--text);
-  padding: 12px 14px;
-  outline: none;
-}
-
-input:focus, textarea:focus {
-  border-color: rgba(124, 156, 255, 0.7);
-  box-shadow: 0 0 0 3px rgba(124, 156, 255, 0.15);
-}
-
-.actions {
-  display: grid;
-  gap: 12px;
-}
-
-.join-row {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 8px;
-}
-
-button {
-  border: none;
-  border-radius: 12px;
-  padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--text);
-  cursor: pointer;
-  font-weight: 600;
-  transition: transform 0.15s ease, opacity 0.15s ease;
-}
-
-button:hover {
-  transform: translateY(-1px);
-}
-
-button:active {
-  transform: translateY(0);
-}
-
-.primary {
-  background: linear-gradient(135deg, var(--primary), #7ee7d7);
-  color: #07111b;
-}
-
-.secondary {
-  width: 100%;
-  background: rgba(140, 148, 255, 0.15);
-}
-
-.code-panel {
-  display: grid;
-  gap: 12px;
-}
-
-.label {
-  color: var(--muted);
-  font-size: 0.72rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.code-box {
-  border-radius: 12px;
-  background: rgba(124, 156, 255, 0.12);
-  border: 1px dashed rgba(124, 156, 255, 0.5);
-  text-align: center;
-  font-size: clamp(1.5rem, 5vw, 2.2rem);
-  font-weight: 700;
-  color: var(--primary-2);
-  padding: 16px 12px;
-  letter-spacing: 0.18em;
-}
-
-.chat-panel {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-
-.chat-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 22px 28px 16px;
-  border-bottom: 1px solid var(--border);
-}
-
-.badge {
-  border-radius: 999px;
-  padding: 8px 12px;
-  font-size: 0.76rem;
-  background: rgba(88, 214, 141, 0.12);
-  color: var(--success);
-  border: 1px solid rgba(88, 214, 141, 0.2);
-}
-
-.messages {
-  flex: 1;
-  overflow-y: auto;
-  padding: 18px 28px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  background: linear-gradient(180deg, rgba(10, 14, 20, 0.2), rgba(15, 21, 32, 0.5));
-}
-
-.message {
-  max-width: min(72%, 560px);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 12px 14px;
-  border-radius: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  background: rgba(255, 255, 255, 0.04);
-}
-
-.message.self {
-  align-self: flex-end;
-  background: linear-gradient(135deg, rgba(124, 156, 255, 0.25), rgba(116, 199, 184, 0.15));
-}
-
-.message.system {
-  align-self: center;
-  max-width: 80%;
-  background: rgba(255, 255, 255, 0.03);
-  color: var(--muted);
-  text-align: center;
-  font-size: 0.82rem;
-}
-
-.message-header {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  font-size: 0.7rem;
-  color: var(--muted);
-}
-
-.message-text {
-  line-height: 1.5;
-  word-break: break-word;
-  white-space: pre-wrap;
-}
-
-.message img {
-  display: block;
-  max-width: min(320px, 100%);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.typing-indicator {
-  min-height: 24px;
-  padding: 0 28px 8px;
-  color: var(--muted);
-  font-size: 0.82rem;
-}
-
-.hidden {
-  visibility: hidden;
-}
-
-.composer {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: end;
-  gap: 12px;
-  padding: 18px 28px 28px;
-  border-top: 1px solid var(--border);
-  background: rgba(10, 15, 26, 0.6);
-}
-
-.image-picker {
-  margin: 0;
-  width: 52px;
-  height: 52px;
-  border-radius: 14px;
-  display: grid;
-  place-items: center;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--border);
-  color: var(--text);
-  cursor: pointer;
-  font-size: 1.4rem;
-}
-
-.image-picker input {
-  display: none;
-}
-
-textarea {
-  resize: none;
-  min-height: 52px;
-  max-height: 180px;
-  overflow-y: auto;
-}
-
-#sendBtn {
-  min-width: 92px;
-  height: 52px;
-}
-
-@media (max-width: 900px) {
-  body {
-    padding: 16px;
+  if (message.type !== "system") {
+    const isSelf = message.sender === getName();
+    if (isSelf) item.classList.add("self");
   }
 
-  .app-shell {
-    grid-template-columns: 1fr;
-    min-height: auto;
+  const header = document.createElement("div");
+  header.className = "message-header";
+
+  if (message.type === "system") {
+    const meta = document.createElement("span");
+    meta.textContent = "System";
+    header.appendChild(meta);
+  } else {
+    const sender = document.createElement("span");
+    sender.textContent = message.sender;
+    const time = document.createElement("span");
+    time.textContent = new Date(message.createdAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+    header.append(sender, time);
   }
 
-  .sidebar {
-    border-right: none;
-    border-bottom: 1px solid var(--border);
+  item.appendChild(header);
+
+  if (message.type === "image" && message.image) {
+    const image = document.createElement("img");
+    image.src = message.image;
+    image.alt = "Shared photo";
+    item.appendChild(image);
   }
 
-  .message {
-    max-width: 85%;
+  if (message.text) {
+    const text = document.createElement("div");
+    text.className = "message-text";
+    text.textContent = message.text;
+    item.appendChild(text);
   }
+
+  // Add read status for user's own messages
+  if (message.type !== "system" && message.sender === getName()) {
+    const readStatus = document.createElement("div");
+    readStatus.className = "read-status";
+    readStatus.id = `read-${message.id}`;
+    readStatus.textContent = message.isRead ? "✓ Read" : "✓ Sent";
+    if (message.isRead) readStatus.classList.add("read");
+    item.appendChild(readStatus);
+  }
+
+  messagesEl.appendChild(item);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+function renderMessages(messages) {
+  messagesEl.innerHTML = "";
+  messages.forEach((message) => appendMessage(message));
+}
+
+function attachTyping() {
+  if (!state.currentCode) return;
+
+  if (state.typingTimeout) clearTimeout(state.typingTimeout);
+  state.isTyping = true;
+  socket.emit("chat:typing", { code: state.currentCode, isTyping: true });
+
+  state.typingTimeout = setTimeout(() => {
+    state.isTyping = false;
+    socket.emit("chat:typing", { code: state.currentCode, isTyping: false });
+  }, 1000);
+}
+
+function sendMessage() {
+  const code = state.currentCode;
+  const text = messageInput.value.trim();
+  const imageValue = imageInput.files[0] ? imageInput.files[0] : null;
+
+  if (!code) {
+    alert("Create or join a chat first.");
+    return;
+  }
+
+  if (!text && !imageValue) {
+    return;
+  }
+
+  const payload = {
+    code,
+    text,
+    image: ""
+  };
+
+  if (imageValue) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      payload.image = reader.result;
+      socket.emit("chat:send-message", payload);
+      messageInput.value = "";
+      imageInput.value = "";
+      attachTyping();
+    };
+    reader.readAsDataURL(imageValue);
+    return;
+  }
+
+  socket.emit("chat:send-message", payload);
+  messageInput.value = "";
+  attachTyping();
+}
+
+function joinRoom(code) {
+  state.userName = getName();
+  nameInput.value = state.userName;
+
+  if (!code) return;
+
+  socket.emit("chat:join", {
+    code: code.trim(),
+    name: state.userName
+  });
+}
+
+function markMessagesAsRead() {
+  if (!state.currentCode) return;
+  
+  const messageIds = Array.from(messagesEl.querySelectorAll(".message:not(.self)"))
+    .map(el => el.id.replace("msg-", ""))
+    .filter(id => id && !state.messageReadStatus.get(id));
+  
+  if (messageIds.length > 0) {
+    socket.emit("chat:mark-read", { code: state.currentCode, messageIds });
+    messageIds.forEach(id => state.messageReadStatus.set(id, true));
+  }
+}
+
+createChatBtn.addEventListener("click", () => {
+  state.userName = getName();
+  nameInput.value = state.userName;
+  socket.emit("chat:create-room", { name: state.userName });
+});
+
+joinChatBtn.addEventListener("click", () => {
+  const code = codeInput.value.trim();
+  if (!code) {
+    alert("Enter a valid code to join the chat.");
+    return;
+  }
+  joinRoom(code);
+});
+
+messageInput.addEventListener("keydown", (event) => {
+  if (event.key === "Enter" && !event.shiftKey) {
+    event.preventDefault();
+    sendMessage();
+  }
+
+  if (messageInput.value.trim().length > 0) {
+    attachTyping();
+  }
+});
+
+sendBtn.addEventListener("click", sendMessage);
+
+shareLinkBtn.addEventListener("click", async () => {
+  const url = shareLinkBtn.dataset.url || window.location.href;
+  try {
+    await navigator.clipboard.writeText(url);
+    shareLinkBtn.textContent = "Link copied";
+    setTimeout(() => {
+      shareLinkBtn.textContent = "Share link";
+    }, 1200);
+  } catch (error) {
+    window.prompt("Copy this link to share the chat:", url);
+  }
+});
+
+// Mark messages as read when scrolling into view
+messagesEl.addEventListener("scroll", () => {
+  markMessagesAsRead();
+});
+
+socket.on("chat:created", ({ code, name, shareUrl }) => {
+  state.userName = name;
+  nameInput.value = name;
+  setRoomCode(code);
+  shareLinkBtn.dataset.url = shareUrl;
+  participantBadge.textContent = "1 online";
+});
+
+socket.on("chat:joined", ({ code, name, messages }) => {
+  state.userName = name;
+  nameInput.value = name;
+  setRoomCode(code);
+  renderMessages(messages);
+  markMessagesAsRead();
+});
+
+socket.on("chat:message", (message) => {
+  appendMessage(message);
+});
+
+socket.on("chat:message-read", ({ messageId, readBy }) => {
+  const readElement = document.getElementById(`read-${messageId}`);
+  if (readElement) {
+    readElement.textContent = `✓ Read by ${readBy}`;
+    readElement.classList.add("read");
+  }
+});
+
+socket.on("chat:room-update", ({ code, participantCount }) => {
+  if (code === state.currentCode) {
+    participantBadge.textContent = `${participantCount} online`;
+  }
+});
+
+socket.on("chat:typing", ({ user, isTyping }) => {
+  if (isTyping) {
+    typingIndicator.textContent = `${user} is typing…`;
+    typingIndicator.classList.remove("hidden");
+  } else {
+    typingIndicator.classList.add("hidden");
+  }
+});
+
+socket.on("chat:error", ({ message }) => {
+  alert(message);
+});
+
+const params = new URLSearchParams(window.location.search);
+const codeFromUrl = params.get("code");
+if (codeFromUrl) {
+  joinRoom(codeFromUrl);
 }
