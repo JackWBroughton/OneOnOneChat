@@ -1,0 +1,13 @@
+[build]
+  command = "npm install"
+  functions = "functions"
+  publish = "public"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[env]
+  [env.production]
+    NODE_ENV = "production"
